@@ -34,8 +34,10 @@ jobs:
       - name: Run Semgrep SAST
         run: |
           semgrep scan \
-            --config auto \
-            --severity ERROR \
+            --config p/java \
+            --include '*.java' \
+            --exclude '*/target/*' \
+            --exclude '*/test/*' \
             --error
 
   # ============================================================
