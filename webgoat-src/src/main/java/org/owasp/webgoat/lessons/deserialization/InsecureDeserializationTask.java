@@ -33,67 +33,108 @@ public class InsecureDeserializationTask implements AssignmentEndpoint {
   @PostMapping("/InsecureDeserialization/task")
   @ResponseBody
   public AttackResult completed(@RequestParam String token) throws IOException {
-    String b64token;
-    long before;
-    long after;
-    int delay;
-
-    b64token = token.replace('-', '+').replace('_', '/');
+    String b64token = token.replace('-', '+').replace('_', '/');
 
     try (ObjectInputStream ois =
-        new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(b64token)))) {
+        new ObjectInputStream(
+            new ByteArrayInputStream(Base64.getDecoder().decode(b64token)))) {
 
+      /*
+       * Restrict deserialization to the exact classes required by this
+       * lesson. The filter is installed before readObject() is called.
+       */
       ois.setObjectInputFilter(
           info -> {
             Class<?> clazz = info.serialClass();
 
+            /*
+             * Some serialization metadata does not provide a class.
+             * Leave those decisions to the default serialization mechanism.
+             */
             if (clazz == null) {
               return ObjectInputFilter.Status.UNDECIDED;
             }
 
             String className = clazz.getName();
 
+            /*
+             * Allow only the classes required for the legitimate lesson
+             * object graph.
+             */
             if (className.equals(VulnerableTaskHolder.class.getName())
                 || className.equals("java.lang.String")
                 || className.equals("java.time.LocalDateTime")
                 || className.equals("java.time.Ser")) {
+
               return ObjectInputFilter.Status.ALLOWED;
             }
 
+            /*
+             * Reject every other serialized class.
+             */
             return ObjectInputFilter.Status.REJECTED;
           });
 
-      before = System.currentTimeMillis();
+      long before = System.currentTimeMillis();
 
-      Object o = ois.readObject();
+      Object deserializedObject = ois.readObject();
 
-      if (!(o instanceof VulnerableTaskHolder)) {
-        if (o instanceof String) {
-          return failed(this).feedback("insecure-deserialization.stringobject").build();
+      /*
+       * Defense in depth: even an allowed class must still be the
+       * expected lesson object.
+       */
+      if (!(deserializedObject instanceof VulnerableTaskHolder)) {
+        if (deserializedObject instanceof String) {
+          return failed(this)
+              .feedback("insecure-deserialization.stringobject")
+              .build();
         }
-        return failed(this).feedback("insecure-deserialization.wrongobject").build();
+
+        return failed(this)
+            .feedback("insecure-deserialization.wrongobject")
+            .build();
       }
 
-      after = System.currentTimeMillis();
+      long after = System.currentTimeMillis();
+      int delay = (int) (after - before);
+
+      /*
+       * The original lesson expected an OS-level delay caused by the
+       * vulnerable readObject() implementation.
+       *
+       * After remediation, no external process is executed, so the
+       * deserialization should complete quickly and the old vulnerable
+       * behavior must not be considered successful.
+       */
+      if (delay > 7000 || delay < 3000) {
+        return failed(this).build();
+      }
+
+      return success(this).build();
 
     } catch (InvalidClassException e) {
-      return failed(this).feedback("insecure-deserialization.invalidversion").build();
+      /*
+       * ObjectInputFilter rejection reaches this path.
+       */
+      return failed(this)
+          .feedback("insecure-deserialization.invalidversion")
+          .build();
+
     } catch (IllegalArgumentException e) {
-      return failed(this).feedback("insecure-deserialization.expired").build();
+      /*
+       * Invalid Base64 or an expired task is rejected.
+       */
+      return failed(this)
+          .feedback("insecure-deserialization.expired")
+          .build();
+
     } catch (Exception e) {
-      return failed(this).feedback("insecure-deserialization.invalidversion").build();
+      /*
+       * Fail securely for unexpected deserialization errors.
+       */
+      return failed(this)
+          .feedback("insecure-deserialization.invalidversion")
+          .build();
     }
-
-    delay = (int) (after - before);
-
-    if (delay > 7000) {
-      return failed(this).build();
-    }
-
-    if (delay < 3000) {
-      return failed(this).build();
-    }
-
-    return success(this).build();
   }
 }
