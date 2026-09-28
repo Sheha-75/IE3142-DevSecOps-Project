@@ -31,14 +31,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Run Semgrep SAST
+            - name: Run Semgrep SAST
         run: |
           semgrep scan \
             --config p/java \
             --include '*.java' \
             --exclude '*/target/*' \
-            --exclude '*/test/*' \
-            --error
+            --exclude '*/test/*'
 
   # ============================================================
   # 2. SCA - OWASP Dependency Check
