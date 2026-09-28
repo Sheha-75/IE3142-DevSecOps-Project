@@ -71,7 +71,7 @@ jobs:
             -DskipTests \
             -DfailBuildOnCVSS=7 \
             -Dformat=HTML,JSON \
-            -DnvdApiKeyEnvironmentVariable=NVD_API_KEY
+            -DnvdApiKey="$NVD_API_KEY"
 
   # ============================================================
   # 3. Secret Scanning - Gitleaks
