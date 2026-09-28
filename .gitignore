@@ -1,0 +1,26 @@
+﻿# Maven / Java build output
+**/target/
+**/.mvn/timing.properties
+
+# IDE files
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local Docker data
+docker-data/
+
+# Temporary files
+*.tmp
+*.temp
