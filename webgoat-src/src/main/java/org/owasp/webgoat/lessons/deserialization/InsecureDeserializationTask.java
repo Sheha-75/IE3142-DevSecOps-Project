@@ -10,6 +10,7 @@ import static org.owasp.webgoat.container.assignments.AttackResultBuilder.succes
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InvalidClassException;
+import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
 import java.util.Base64;
 import org.dummy.insecure.framework.VulnerableTaskHolder;
@@ -41,15 +42,40 @@ public class InsecureDeserializationTask implements AssignmentEndpoint {
 
     try (ObjectInputStream ois =
         new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(b64token)))) {
+
+      ois.setObjectInputFilter(
+          info -> {
+            Class<?> clazz = info.serialClass();
+
+            if (clazz == null) {
+              return ObjectInputFilter.Status.UNDECIDED;
+            }
+
+            String className = clazz.getName();
+
+            if (className.equals(VulnerableTaskHolder.class.getName())
+                || className.equals("java.lang.String")
+                || className.equals("java.time.LocalDateTime")
+                || className.equals("java.time.Ser")) {
+              return ObjectInputFilter.Status.ALLOWED;
+            }
+
+            return ObjectInputFilter.Status.REJECTED;
+          });
+
       before = System.currentTimeMillis();
+
       Object o = ois.readObject();
+
       if (!(o instanceof VulnerableTaskHolder)) {
         if (o instanceof String) {
           return failed(this).feedback("insecure-deserialization.stringobject").build();
         }
         return failed(this).feedback("insecure-deserialization.wrongobject").build();
       }
+
       after = System.currentTimeMillis();
+
     } catch (InvalidClassException e) {
       return failed(this).feedback("insecure-deserialization.invalidversion").build();
     } catch (IllegalArgumentException e) {
@@ -59,12 +85,15 @@ public class InsecureDeserializationTask implements AssignmentEndpoint {
     }
 
     delay = (int) (after - before);
+
     if (delay > 7000) {
       return failed(this).build();
     }
+
     if (delay < 3000) {
       return failed(this).build();
     }
+
     return success(this).build();
   }
 }
