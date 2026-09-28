@@ -31,7 +31,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-            - name: Run Semgrep SAST
+      - name: Run Semgrep SAST
         run: |
           semgrep scan \
             --config p/java \
@@ -132,7 +132,6 @@ jobs:
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
-
     needs:
       - build-test
 
@@ -159,7 +158,6 @@ jobs:
   trivy:
     name: Trivy - Container Vulnerability Scan
     runs-on: ubuntu-latest
-
     needs:
       - docker-build
 
@@ -220,14 +218,12 @@ jobs:
           echo "=========================================="
           echo "       DEVSECOPS SECURITY GATE"
           echo "=========================================="
-
           echo "SAST              : $SAST_RESULT"
           echo "Dependency Scan   : $SCA_RESULT"
           echo "Secret Scan       : $SECRET_RESULT"
           echo "Build & Tests     : $BUILD_RESULT"
           echo "Docker Build      : $DOCKER_RESULT"
           echo "Trivy             : $TRIVY_RESULT"
-
           echo "=========================================="
 
           if [ "$SAST_RESULT" != "success" ] || \
