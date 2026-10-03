@@ -45,5 +45,17 @@ public class AntiSamyController {
 As you can see the Java file stores unfiltered user input into the database.
 You have the whole malicious code stored in your database now.
 
-== It is your turn!
-Try to prevent this kind of XSS by creating a clean string inside the saveNewComment() function. Use the "antisamy-slashdot.xml" as a policy file for this example:
+== Safe storage with an HTML allowlist
+
+When comments are intended to support limited HTML, sanitize them with the approved AntiSamy policy before storing them. Continue to encode comments for the output context when rendering them.
+
+[source,java]
+-------------------------------------------------------
+public void saveNewComment(int threadID, int userID, String newComment)
+        throws PolicyException, ScanException {
+    Policy policy = Policy.getInstance("antisamy-slashdot.xml");
+    AntiSamy antiSamy = new AntiSamy();
+    CleanResults results = antiSamy.scan(newComment, policy);
+    MyCommentDAO.addComment(threadID, userID, results.getCleanHTML());
+}
+-------------------------------------------------------
