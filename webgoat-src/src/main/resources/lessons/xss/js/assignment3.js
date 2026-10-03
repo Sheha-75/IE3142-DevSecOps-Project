@@ -11,6 +11,7 @@ $(document).ready( () => {
     });
 
     editor.setValue(
+        "<%@ taglib prefix=\"e\" uri=\"https://www.owasp.org/index.php/OWASP_Java_Encoder_Project\" %>\n" +
         "<html>\n" +
         "<head>\n" +
         "    <title>Using GET and POST Method to Read Form Data</title>\n" +
@@ -21,11 +22,11 @@ $(document).ready( () => {
         "        <tbody>\n" +
         "            <tr>\n" +
         "                <td><b>First Name:</b></td>\n" +
-        "                <td>YOUR CODE HERE</td>\n" +
+        "                <td>${e:forHtml(param.first_name)}</td>\n" +
         "            </tr>\n" +
         "            <tr>\n" +
         "                <td><b>Last Name:</b></td>\n" +
-        "                <td>YOUR CODE HERE</td>\n" +
+        "                <td>${e:forHtml(param.last_name)}</td>\n" +
         "            </tr>\n" +
         "        </tbody>\n" +
         "    </table>\n" +
