@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
 
 /** Created by jason on 1/5/17. */
@@ -31,12 +32,19 @@ public class MissingFunctionACUsers {
   private final MissingAccessControlUserRepository userRepository;
 
   @GetMapping(path = {"access-control/users"})
-  public ModelAndView listUsers() {
+  public ModelAndView listUsers(@CurrentUsername String username) {
+
+    var currentUser = userRepository.findByUsername(username);
+
+    if (currentUser == null || !currentUser.isAdmin()) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    }
 
     ModelAndView model = new ModelAndView();
     model.setViewName("list_users");
     List<User> allUsers = userRepository.findAllUsers();
     model.addObject("numUsers", allUsers.size());
+
     // add display user objects in place of direct users
     List<DisplayUser> displayUsers = new ArrayList<>();
     for (User user : allUsers) {
@@ -51,7 +59,15 @@ public class MissingFunctionACUsers {
       path = {"access-control/users"},
       consumes = "application/json")
   @ResponseBody
-  public ResponseEntity<List<DisplayUser>> usersService() {
+  public ResponseEntity<List<DisplayUser>> usersService(
+      @CurrentUsername String username) {
+
+    var currentUser = userRepository.findByUsername(username);
+
+    if (currentUser == null || !currentUser.isAdmin()) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+
     return ResponseEntity.ok(
         userRepository.findAllUsers().stream()
             .map(user -> new DisplayUser(user, PASSWORD_SALT_SIMPLE))
@@ -62,14 +78,18 @@ public class MissingFunctionACUsers {
       path = {"access-control/users-admin-fix"},
       consumes = "application/json")
   @ResponseBody
-  public ResponseEntity<List<DisplayUser>> usersFixed(@CurrentUsername String username) {
+  public ResponseEntity<List<DisplayUser>> usersFixed(
+      @CurrentUsername String username) {
+
     var currentUser = userRepository.findByUsername(username);
+
     if (currentUser != null && currentUser.isAdmin()) {
       return ResponseEntity.ok(
           userRepository.findAllUsers().stream()
               .map(user -> new DisplayUser(user, PASSWORD_SALT_ADMIN))
               .collect(Collectors.toList()));
     }
+
     return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
   }
 
@@ -90,6 +110,5 @@ public class MissingFunctionACUsers {
     // @RequestMapping(path = {"user/{username}","/"}, method = RequestMethod.DELETE, consumes =
     // "application/json", produces = "application/json")
     // TODO implement delete method with id param and authorization
-
   }
 }
