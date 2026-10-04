@@ -60,6 +60,15 @@ But what happens if someone uses this link:
 http://hostname.com/mywebapp/main.jsp?first_name=<script>alert("XSS Test")</script>
 ----
 
-=== It is your turn!
+=== Safe JSP output
 
-Try to prevent this kind of XSS by escaping the URL parameters in the JSP file:
+Encode each request value for the HTML text context before rendering it. With the OWASP Java Encoder tag library, use `forHtml`:
+
+[source,html]
+-------------------------------------------------------
+<%@ taglib prefix="e" uri="https://www.owasp.org/index.php/OWASP_Java_Encoder_Project" %>
+<td>${e:forHtml(param.first_name)}</td>
+<td>${e:forHtml(param.last_name)}</td>
+-------------------------------------------------------
+
+This keeps submitted markup as text instead of allowing the browser to interpret it as HTML.

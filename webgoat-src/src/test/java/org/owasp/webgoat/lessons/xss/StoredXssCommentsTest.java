@@ -42,6 +42,18 @@ class StoredXssCommentsTest extends LessonTest {
     results.andExpect(jsonPath("$.lessonCompleted", CoreMatchers.is(false)));
   }
 
+  @Test
+  void malformedCommentIsRejectedWithoutServerError() throws Exception {
+    ResultActions results =
+        mockMvc.perform(
+            MockMvcRequestBuilders.post("/CrossSiteScriptingStored/stored-xss")
+                .content("{invalid json")
+                .contentType(MediaType.APPLICATION_JSON));
+
+    results.andExpect(status().isOk());
+    results.andExpect(jsonPath("$.lessonCompleted", CoreMatchers.is(false)));
+  }
+
   /* For the next two tests there is a comment seeded ...
      comments.add(new Comment("secUriTy", DateTime.now().toString(fmt), "<script>console.warn('unit test me')</script>Comment for Unit Testing"));
      ... the isEncoded method will remain commented out as it will fail (because WebGoat isn't supposed to be secure)
