@@ -8,6 +8,7 @@ import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
 
 import java.sql.*;
+import java.sql.PreparedStatement;
 import org.owasp.webgoat.container.LessonDataSource;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AssignmentHints;
@@ -41,15 +42,15 @@ public class SqlInjectionLesson5a implements AssignmentEndpoint {
     return injectableQuery(account + " " + operator + " " + injection);
   }
 
-  protected AttackResult injectableQuery(String accountName) {
+protected AttackResult injectableQuery(String accountName) {
     String query = "";
     try (Connection connection = dataSource.getConnection()) {
-      query =
-          "SELECT * FROM user_data WHERE first_name = 'John' and last_name = '" + accountName + "'";
-      try (Statement statement =
-          connection.createStatement(
-              ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
-        ResultSet results = statement.executeQuery(query);
+      query = "SELECT * FROM user_data WHERE first_name = 'John' and last_name = ?";
+      try (PreparedStatement statement =
+          connection.prepareStatement(
+              query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+        statement.setString(1, accountName);
+        ResultSet results = statement.executeQuery();
 
         if ((results != null) && (results.first())) {
           ResultSetMetaData resultsMetaData = results.getMetaData();
@@ -83,7 +84,7 @@ public class SqlInjectionLesson5a implements AssignmentEndpoint {
               this.getClass().getName() + " : " + e.getMessage() + "<br> Your query was: " + query)
           .build();
     }
-  }
+}
 
   public static String writeTable(ResultSet results, ResultSetMetaData resultsMetaData)
       throws SQLException {
